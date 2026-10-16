@@ -1,10 +1,10 @@
 // X4 Camino Gids: werkt offline. Bij elke update dit versienummer verhogen.
 // Ruimt alleen eigen caches (x4-...) op: de Eten-app op hetzelfde adres blijft intact.
-const VERSION = 'x4-v1';
+const VERSION = 'x4-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -14,11 +14,11 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Eerst netwerk (nieuwste versie), zonder bereik uit de cache.
+// Eerst netwerk (nieuwste versie, pagina altijd vers van GitHub), zonder bereik uit de cache.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(e.request, e.request.mode === 'navigate' ? { cache: 'no-store' } : {}).then(r => {
       const copy = r.clone();
       caches.open(VERSION).then(c => c.put(e.request, copy));
       return r;
